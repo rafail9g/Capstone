@@ -11,13 +11,14 @@ const { notFound, errorHandler } = require('./middleware/error');
 
 const app = express();
 
-app.use(
-  '/api-docs',
-  swaggerUi.serveFiles(openapiSpec),
-  swaggerUi.setup(openapiSpec, {
-    customSiteTitle: 'MBKM API Docs'
-  })
-);
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'MBKM API is running',
+    docs: '/api-docs',
+    health: '/health'
+  });
+});
 
 app.use(helmet());
 
