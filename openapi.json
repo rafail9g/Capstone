@@ -1,0 +1,2324 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "MBKM API” Manajemen User & Role",
+    "version": "1.1.0",
+    "description": "Admin mengelola akun dosen (Tim MBKM, GPM, Penguji Semhas, DPL, dll - satu dosen boleh punya beberapa role) dan akun mahasiswa langsung dibuat oleh admin. Klik Authorize lalu isi token dari /auth/login untuk mencoba endpoint yang butuh login."
+  },
+  "servers": [
+    {
+      "url": "/api"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Login dan profil akun yang sedang login"
+    },
+    {
+      "name": "Users (Dosen)",
+      "description": "Admin: CRUD & pemberian role akun dosen"
+    },
+    {
+      "name": "Roles",
+      "description": "Master data role"
+    },
+    {
+      "name": "Dashboard",
+      "description": "Landing/menu yang beda-beda tergantung role"
+    },
+    {
+      "name": "Mitra",
+      "description": "Admin: CRUD mitra magang (termasuk upload foto)"
+    },
+    {
+      "name": "Program Studi",
+      "description": "Master program studi (isi dropdown)"
+    },
+    {
+      "name": "CPL",
+      "description": "Admin: CRUD Capaian Pembelajaran Lulusan"
+    },
+    {
+      "name": "Mata Kuliah",
+      "description": "Admin: CRUD mata kuliah beserta CPMK"
+    },
+    {
+      "name": "Paket Konversi",
+      "description": "Admin & Tim MBKM: CRUD paket konversi mata kuliah (pemaketan role/skill MBKM)"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Envelope": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {},
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "Role": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 3
+          },
+          "code": {
+            "type": "string",
+            "example": "tim_mbkm"
+          },
+          "name": {
+            "type": "string",
+            "example": "Tim MBKM"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "allowed_user_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "dosen"
+            ]
+          },
+          "is_system": {
+            "type": "boolean"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nama": {
+            "type": "string"
+          },
+          "alamat": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string"
+          },
+          "user_type": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "dosen",
+              "mahasiswa"
+            ]
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "nim": {
+            "type": "string",
+            "nullable": true
+          },
+          "nip": {
+            "type": "string",
+            "nullable": true
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Role"
+            }
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "admin@example.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "GantiPasswordIni123"
+          }
+        }
+      },
+      "UpdateSelfRequest": {
+        "type": "object",
+        "properties": {
+          "nama": {
+            "type": "string"
+          },
+          "alamat": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateDosenRequest": {
+        "type": "object",
+        "required": [
+          "nama",
+          "email",
+          "password",
+          "nip"
+        ],
+        "properties": {
+          "nama": {
+            "type": "string",
+            "example": "Dr. Budi"
+          },
+          "alamat": {
+            "type": "string",
+            "example": "Jember"
+          },
+          "email": {
+            "type": "string",
+            "example": "budi@kampus.ac.id"
+          },
+          "password": {
+            "type": "string",
+            "example": "rahasia123"
+          },
+          "nip": {
+            "type": "string",
+            "example": "198501012010011001"
+          },
+          "role_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "example": [
+              3,
+              6
+            ],
+            "description": "opsional, bisa lebih dari satu role sekaligus"
+          }
+        }
+      },
+      "UpdateUserRequest": {
+        "type": "object",
+        "properties": {
+          "nama": {
+            "type": "string"
+          },
+          "alamat": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "nip": {
+            "type": "string"
+          }
+        }
+      },
+      "SetRolesRequest": {
+        "type": "object",
+        "required": [
+          "role_ids"
+        ],
+        "properties": {
+          "role_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "example": [
+              3,
+              6
+            ]
+          }
+        }
+      },
+      "CreateRoleRequest": {
+        "type": "object",
+        "required": [
+          "code",
+          "name"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "koordinator_prodi"
+          },
+          "name": {
+            "type": "string",
+            "example": "Koordinator Prodi"
+          },
+          "description": {
+            "type": "string"
+          },
+          "allowed_user_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "dosen"
+            ]
+          }
+        }
+      },
+      "Mitra": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "nama": {
+            "type": "string",
+            "example": "PT. Mencari Cinta Sejati"
+          },
+          "alamat": {
+            "type": "string",
+            "nullable": true,
+            "example": "Jalan Mawar No. 5"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true,
+            "example": "MencariCinta@gmail.com"
+          },
+          "deskripsi": {
+            "type": "string",
+            "nullable": true,
+            "example": "Lorem ipsum dolor sit amet"
+          },
+          "foto_url": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://xxx.supabase.co/storage/v1/object/public/mitra-foto/foto.jpg"
+          },
+          "is_active": {
+            "type": "boolean",
+            "example": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreateMitraRequest": {
+        "type": "object",
+        "required": [
+          "nama"
+        ],
+        "properties": {
+          "nama": {
+            "type": "string",
+            "example": "PT. Mencari Cinta Sejati"
+          },
+          "alamat": {
+            "type": "string",
+            "example": "Jalan Mawar No. 5"
+          },
+          "email": {
+            "type": "string",
+            "example": "MencariCinta@gmail.com"
+          },
+          "deskripsi": {
+            "type": "string",
+            "example": "Perusahaan bergerak di bidang teknologi"
+          },
+          "foto": {
+            "type": "string",
+            "format": "binary",
+            "description": "File gambar (JPG/PNG/WebP/GIF, max 5 MB)"
+          }
+        }
+      },
+      "UpdateMitraRequest": {
+        "type": "object",
+        "properties": {
+          "nama": {
+            "type": "string",
+            "example": "PT. Nama Baru"
+          },
+          "alamat": {
+            "type": "string",
+            "example": "Jalan Mawar No. 10"
+          },
+          "email": {
+            "type": "string",
+            "example": "baru@gmail.com"
+          },
+          "deskripsi": {
+            "type": "string",
+            "example": "Deskripsi baru"
+          },
+          "is_active": {
+            "type": "boolean",
+            "example": true
+          },
+          "foto": {
+            "type": "string",
+            "format": "binary",
+            "description": "File gambar baru (opsional, foto lama otomatis terhapus)"
+          }
+        }
+      },
+      "CreateMitraJsonRequest": {
+        "type": "object",
+        "required": [
+          "nama"
+        ],
+        "properties": {
+          "nama": {
+            "type": "string",
+            "example": "PT. Mencari Cinta Sejati"
+          },
+          "alamat": {
+            "type": "string",
+            "example": "Jalan Mawar No. 5"
+          },
+          "email": {
+            "type": "string",
+            "example": "MencariCinta@gmail.com"
+          },
+          "deskripsi": {
+            "type": "string",
+            "example": "Perusahaan teknologi"
+          }
+        }
+      },
+      "ProgramStudi": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "kode": {
+            "type": "string",
+            "example": "TI"
+          },
+          "nama": {
+            "type": "string",
+            "example": "Teknologi Informasi"
+          }
+        }
+      },
+      "Cpl": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kode": {
+            "type": "string",
+            "example": "CPL-1"
+          },
+          "deskripsi": {
+            "type": "string"
+          },
+          "program_studi_id": {
+            "type": "integer"
+          },
+          "program_studi": {
+            "$ref": "#/components/schemas/ProgramStudi"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreateCplRequest": {
+        "type": "object",
+        "required": [
+          "kode",
+          "program_studi_id",
+          "deskripsi"
+        ],
+        "properties": {
+          "kode": {
+            "type": "string",
+            "example": "CPL-1"
+          },
+          "program_studi_id": {
+            "type": "integer",
+            "example": 3
+          },
+          "deskripsi": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateCplRequest": {
+        "type": "object",
+        "description": "Minimal satu field",
+        "properties": {
+          "kode": {
+            "type": "string"
+          },
+          "program_studi_id": {
+            "type": "integer"
+          },
+          "deskripsi": {
+            "type": "string"
+          }
+        }
+      },
+      "Cpmk": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "urutan": {
+            "type": "integer"
+          },
+          "deskripsi": {
+            "type": "string"
+          }
+        }
+      },
+      "MataKuliah": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kode": {
+            "type": "string",
+            "example": "KFU"
+          },
+          "nama": {
+            "type": "string",
+            "example": "Algoritma Evolusi (KFU1202)"
+          },
+          "sks": {
+            "type": "integer",
+            "example": 3
+          },
+          "program_studi_id": {
+            "type": "integer"
+          },
+          "cpl_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "program_studi": {
+            "$ref": "#/components/schemas/ProgramStudi"
+          },
+          "cpl": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "kode": {
+                "type": "string"
+              },
+              "deskripsi": {
+                "type": "string"
+              }
+            }
+          },
+          "cpmk": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Cpmk"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreateMataKuliahRequest": {
+        "type": "object",
+        "required": [
+          "program_studi_id",
+          "kode",
+          "nama",
+          "cpl_id",
+          "sks"
+        ],
+        "properties": {
+          "program_studi_id": {
+            "type": "integer",
+            "example": 3
+          },
+          "kode": {
+            "type": "string",
+            "example": "KFU"
+          },
+          "nama": {
+            "type": "string",
+            "example": "Algoritma Evolusi (KFU1202)"
+          },
+          "cpl_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Harus CPL milik program studi yang sama"
+          },
+          "sks": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6,
+            "example": 3
+          },
+          "cpmk": {
+            "type": "array",
+            "description": "Deskripsi CPMK, jumlah bebas (maks 50). Isian kosong diabaikan.",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "CPMK-1: Mahasiswa mampu menjelaskan konsep dasar algoritma evolusi."
+            ]
+          }
+        }
+      },
+      "UpdateMataKuliahRequest": {
+        "type": "object",
+        "description": "Minimal satu field. Kalau program_studi_id diganti, kirim juga cpl_id baru. Kalau cpmk dikirim, seluruh CPMK diganti; kalau tidak dikirim, tidak berubah.",
+        "properties": {
+          "program_studi_id": {
+            "type": "integer"
+          },
+          "kode": {
+            "type": "string"
+          },
+          "nama": {
+            "type": "string"
+          },
+          "cpl_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sks": {
+            "type": "integer"
+          },
+          "cpmk": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PaketKonversi": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nama": {
+            "type": "string",
+            "example": "UI/UX DESIGN"
+          },
+          "deskripsi": {
+            "type": "string",
+            "nullable": true,
+            "example": "Paket konversi mata kuliah untuk plotting role UI/UX Designer MBKM"
+          },
+          "total_sks": {
+            "type": "integer",
+            "example": 20
+          },
+          "jumlah_mata_kuliah": {
+            "type": "integer",
+            "example": 6
+          },
+          "mata_kuliah": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MataKuliah"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreatePaketKonversiRequest": {
+        "type": "object",
+        "required": [
+          "nama"
+        ],
+        "properties": {
+          "nama": {
+            "type": "string",
+            "description": "Nama plotting / role / skill MBKM",
+            "example": "UI/UX DESIGN"
+          },
+          "deskripsi": {
+            "type": "string",
+            "example": "Paket konversi mata kuliah untuk role UI/UX Designer"
+          },
+          "mata_kuliah_ids": {
+            "type": "array",
+            "description": "Daftar ID mata kuliah (UUID) yang dipilih dari dropdown",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": [
+              "a0000000-0000-0000-0000-000000000001",
+              "a0000000-0000-0000-0000-000000000002"
+            ]
+          }
+        }
+      },
+      "UpdatePaketKonversiRequest": {
+        "type": "object",
+        "description": "Minimal satu field. Jika mata_kuliah_ids dikirim, seluruh daftar mata kuliah pada paket akan diganti.",
+        "properties": {
+          "nama": {
+            "type": "string",
+            "example": "UI/UX DESIGN & RESEARCH"
+          },
+          "deskripsi": {
+            "type": "string"
+          },
+          "mata_kuliah_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Berhasil, dapat token JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Email/password salah"
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Profil & role akun yang sedang login",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Edit profil sendiri (nama/alamat/password)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSelfRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/dashboard": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Landing page/menu, isinya beda tergantung role akun yang login",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/roles": {
+      "get": {
+        "tags": [
+          "Roles"
+        ],
+        "summary": "Daftar role (untuk pilihan/checkbox)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "admin",
+                "dosen",
+                "mahasiswa"
+              ]
+            },
+            "description": "filter: role yang boleh dipegang tipe akun ini"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Roles"
+        ],
+        "summary": "Buat role baru (admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRoleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Dibuat"
+          }
+        }
+      }
+    },
+    "/roles/{id}": {
+      "get": {
+        "tags": [
+          "Roles"
+        ],
+        "summary": "Detail role",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Roles"
+        ],
+        "summary": "Edit role (admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRoleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Roles"
+        ],
+        "summary": "Hapus role (admin, role bawaan terlindungi)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": [
+          "Users (Dosen)"
+        ],
+        "summary": "List akun dosen (admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "filter kode role, mis. tim_mbkm"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "cari nama/email/NIP"
+          },
+          {
+            "name": "is_active",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Users (Dosen)"
+        ],
+        "summary": "Admin membuat akun dosen baru (boleh langsung isi role_ids)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDosenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Dibuat"
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "tags": [
+          "Users (Dosen)"
+        ],
+        "summary": "Detail akun dosen",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Users (Dosen)"
+        ],
+        "summary": "Edit akun dosen (admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Users (Dosen)"
+        ],
+        "summary": "Hapus akun dosen (admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/users/{id}/roles": {
+      "get": {
+        "tags": [
+          "Users (Dosen)"
+        ],
+        "summary": "Role yang dipegang dosen ini",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Users (Dosen)"
+        ],
+        "summary": "Ganti SEMUA role dosen sekaligus (checkbox form)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetRolesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Users (Dosen)"
+        ],
+        "summary": "Tambah role ke dosen tanpa menghapus yang lama",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetRolesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/users/{id}/roles/{roleId}": {
+      "delete": {
+        "tags": [
+          "Users (Dosen)"
+        ],
+        "summary": "Cabut satu role dari dosen",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "roleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/mitra": {
+      "get": {
+        "tags": [
+          "Mitra"
+        ],
+        "summary": "List semua mitra magang (admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Cari berdasarkan nama/email/alamat"
+          },
+          {
+            "name": "is_active",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "rows": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Mitra"
+                          }
+                        },
+                        "total": {
+                          "type": "integer",
+                          "example": 25
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Tidak terautentikasi"
+          },
+          "403": {
+            "description": "Bukan admin"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Mitra"
+        ],
+        "summary": "Tambah mitra magang baru (admin)",
+        "description": "Kirim sebagai multipart/form-data. Field foto opsional.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMitraRequest"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMitraJsonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Mitra berhasil ditambahkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Mitra"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validasi gagal"
+          },
+          "401": {
+            "description": "Tidak terautentikasi"
+          },
+          "403": {
+            "description": "Bukan admin"
+          }
+        }
+      }
+    },
+    "/mitra/{id}": {
+      "get": {
+        "tags": [
+          "Mitra"
+        ],
+        "summary": "Detail mitra magang (admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Mitra"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Mitra tidak ditemukan"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Mitra"
+        ],
+        "summary": "Edit data mitra magang (admin)",
+        "description": "Kirim sebagai multipart/form-data. Field foto opsional — jika diisi, foto lama otomatis diganti.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMitraRequest"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMitraJsonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Mitra berhasil diperbarui",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Mitra"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validasi gagal"
+          },
+          "404": {
+            "description": "Mitra tidak ditemukan"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Mitra"
+        ],
+        "summary": "Hapus mitra magang (admin)",
+        "description": "Foto di Supabase Storage juga ikut terhapus.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mitra berhasil dihapus"
+          },
+          "404": {
+            "description": "Mitra tidak ditemukan"
+          }
+        }
+      }
+    },
+    "/prodi": {
+      "get": {
+        "tags": [
+          "Program Studi"
+        ],
+        "summary": "Daftar program studi (3 pilihan dropdown)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Validasi gagal"
+          },
+          "401": {
+            "description": "Belum login"
+          },
+          "403": {
+            "description": "Bukan admin"
+          },
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/cpl": {
+      "get": {
+        "tags": [
+          "CPL"
+        ],
+        "summary": "Daftar CPL",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "program_studi_id",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filter program studi. Dipakai dropdown CPL di form mata kuliah."
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Validasi gagal"
+          },
+          "401": {
+            "description": "Belum login"
+          },
+          "403": {
+            "description": "Bukan admin"
+          },
+          "200": {
+            "description": "OK: {rows,total}"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "CPL"
+        ],
+        "summary": "Tambah CPL",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCplRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "Validasi gagal"
+          },
+          "401": {
+            "description": "Belum login"
+          },
+          "403": {
+            "description": "Bukan admin"
+          },
+          "201": {
+            "description": "Dibuat"
+          },
+          "409": {
+            "description": "Kode sudah terdaftar di program studi tsb"
+          }
+        }
+      }
+    },
+    "/cpl/{id}": {
+      "get": {
+        "tags": [
+          "CPL"
+        ],
+        "summary": "Detail CPL",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID CPL"
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Validasi gagal"
+          },
+          "401": {
+            "description": "Belum login"
+          },
+          "403": {
+            "description": "Bukan admin"
+          },
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Tidak ditemukan"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "CPL"
+        ],
+        "summary": "Edit CPL",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID CPL"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCplRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "Validasi gagal"
+          },
+          "401": {
+            "description": "Belum login"
+          },
+          "403": {
+            "description": "Bukan admin"
+          },
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Tidak ditemukan"
+          },
+          "409": {
+            "description": "Kode duplikat"
+          },
+          "422": {
+            "description": "Program studi tidak bisa diubah karena CPL sudah dipakai mata kuliah"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "CPL"
+        ],
+        "summary": "Hapus CPL",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID CPL"
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Validasi gagal"
+          },
+          "401": {
+            "description": "Belum login"
+          },
+          "403": {
+            "description": "Bukan admin"
+          },
+          "200": {
+            "description": "Dihapus"
+          },
+          "404": {
+            "description": "Tidak ditemukan"
+          },
+          "409": {
+            "description": "CPL masih dipakai mata kuliah"
+          }
+        }
+      }
+    },
+    "/mata-kuliah": {
+      "get": {
+        "tags": [
+          "Mata Kuliah"
+        ],
+        "summary": "Daftar mata kuliah (beserta CPL & CPMK)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "program_studi_id",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filter program studi. Dipakai dropdown CPL di form mata kuliah."
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Validasi gagal"
+          },
+          "401": {
+            "description": "Belum login"
+          },
+          "403": {
+            "description": "Bukan admin"
+          },
+          "200": {
+            "description": "OK: {rows,total}"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Mata Kuliah"
+        ],
+        "summary": "Tambah mata kuliah",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMataKuliahRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "Validasi gagal"
+          },
+          "401": {
+            "description": "Belum login"
+          },
+          "403": {
+            "description": "Bukan admin"
+          },
+          "201": {
+            "description": "Dibuat"
+          },
+          "409": {
+            "description": "Kode sudah terdaftar di program studi tsb"
+          }
+        }
+      }
+    },
+    "/mata-kuliah/{id}": {
+      "get": {
+        "tags": [
+          "Mata Kuliah"
+        ],
+        "summary": "Detail mata kuliah",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID mata kuliah"
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Validasi gagal"
+          },
+          "401": {
+            "description": "Belum login"
+          },
+          "403": {
+            "description": "Bukan admin"
+          },
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Tidak ditemukan"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Mata Kuliah"
+        ],
+        "summary": "Edit mata kuliah",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID mata kuliah"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMataKuliahRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "Validasi gagal"
+          },
+          "401": {
+            "description": "Belum login"
+          },
+          "403": {
+            "description": "Bukan admin"
+          },
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Tidak ditemukan"
+          },
+          "409": {
+            "description": "Kode duplikat"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Mata Kuliah"
+        ],
+        "summary": "Hapus mata kuliah (CPMK ikut terhapus)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID mata kuliah"
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Validasi gagal"
+          },
+          "401": {
+            "description": "Belum login"
+          },
+          "403": {
+            "description": "Bukan admin"
+          },
+          "200": {
+            "description": "Dihapus"
+          },
+          "404": {
+            "description": "Tidak ditemukan"
+          }
+        }
+      }
+    },
+    "/paket-konversi": {
+      "get": {
+        "tags": [
+          "Paket Konversi"
+        ],
+        "summary": "Daftar paket konversi mata kuliah (plot role/skill MBKM)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Cari berdasarkan nama plotting atau deskripsi paket"
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Validasi gagal"
+          },
+          "401": {
+            "description": "Belum login"
+          },
+          "403": {
+            "description": "Bukan admin atau tim MBKM"
+          },
+          "200": {
+            "description": "OK: {rows,total}"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Paket Konversi"
+        ],
+        "summary": "Buat paket konversi baru (plot role/skill MBKM)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaketKonversiRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "Validasi gagal atau ID mata kuliah tidak ditemukan"
+          },
+          "401": {
+            "description": "Belum login"
+          },
+          "403": {
+            "description": "Bukan admin atau tim MBKM"
+          },
+          "201": {
+            "description": "Paket konversi berhasil dibuat"
+          }
+        }
+      }
+    },
+    "/paket-konversi/{id}": {
+      "get": {
+        "tags": [
+          "Paket Konversi"
+        ],
+        "summary": "Detail paket konversi beserta daftar mata kuliah terpilih",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID paket konversi"
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Validasi ID gagal"
+          },
+          "401": {
+            "description": "Belum login"
+          },
+          "403": {
+            "description": "Bukan admin atau tim MBKM"
+          },
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Paket konversi tidak ditemukan"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Paket Konversi"
+        ],
+        "summary": "Edit paket konversi & sinkronisasi item mata kuliah",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID paket konversi"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePaketKonversiRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "Validasi gagal atau ID mata kuliah tidak ditemukan"
+          },
+          "401": {
+            "description": "Belum login"
+          },
+          "403": {
+            "description": "Bukan admin atau tim MBKM"
+          },
+          "200": {
+            "description": "Paket konversi berhasil diperbarui"
+          },
+          "404": {
+            "description": "Paket konversi tidak ditemukan"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Paket Konversi"
+        ],
+        "summary": "Hapus paket konversi",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID paket konversi"
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Validasi ID gagal"
+          },
+          "401": {
+            "description": "Belum login"
+          },
+          "403": {
+            "description": "Bukan admin atau tim MBKM"
+          },
+          "200": {
+            "description": "Paket konversi berhasil dihapus"
+          },
+          "404": {
+            "description": "Paket konversi tidak ditemukan"
+          }
+        }
+      }
+    }
+  }
+}
