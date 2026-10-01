@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "MBKM API” Manajemen User & Role",
+    "title": "MBKM API",
     "version": "1.1.0",
     "description": "Admin mengelola akun dosen (Tim MBKM, GPM, Penguji Semhas, DPL, dll - satu dosen boleh punya beberapa role) dan akun mahasiswa langsung dibuat oleh admin. Klik Authorize lalu isi token dari /auth/login untuk mencoba endpoint yang butuh login."
   },
