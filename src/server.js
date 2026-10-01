@@ -1,4 +1,11 @@
-const env = require('./config/env');
 const app = require('./app');
 
-app.listen(env.port, () => console.log(`MBKM API berjalan di http://localhost:${env.port}`));
+const PORT = process.env.PORT || 3000;
+
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;
