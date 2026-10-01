@@ -6,11 +6,18 @@ const swaggerUi = require('swagger-ui-express');
 const env = require('./config/env');
 const routes = require('./routes');
 const openapiSpec = require('../openapi.json');
+
 const { notFound, errorHandler } = require('./middleware/error');
 
 const app = express();
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpec));
+app.use(
+  '/api-docs',
+  swaggerUi.serveFiles(openapiSpec),
+  swaggerUi.setup(openapiSpec, {
+    customSiteTitle: 'MBKM API Docs'
+  })
+);
 
 app.use(helmet());
 
