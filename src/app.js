@@ -1,7 +1,6 @@
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
-const swaggerUi = require('swagger-ui-express');
 
 const env = require('./config/env');
 const routes = require('./routes');
@@ -21,14 +20,34 @@ app.get('/', (req, res) => {
   });
 });
 
-// Swagger
-app.use(
-  '/api-docs',
-  swaggerUi.serve,
-  swaggerUi.setup(openapiSpec, {
-    customSiteTitle: 'MBKM API Docs'
-  })
-);
+// Swagger (via CDN, tanpa swagger-ui-express)
+// Harus di atas helmet() supaya CSP helmet tidak memblokir script CDN dan inline script
+app.get('/api-docs/openapi.json', (req, res) => {
+  res.json(openapiSpec);
+});
+
+app.get(['/api-docs', '/api-docs/'], (req, res) => {
+  res.type('html').send(`<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <title>MBKM API Docs</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/swagger-ui.css" />
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"></script>
+  <script>
+    window.onload = function () {
+      window.ui = SwaggerUIBundle({
+        url: '/api-docs/openapi.json',
+        dom_id: '#swagger-ui'
+      });
+    };
+  </script>
+</body>
+</html>`);
+});
 
 app.use(helmet());
 
