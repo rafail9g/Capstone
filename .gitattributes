@@ -1,0 +1,3 @@
+# Exclude database schema from GitHub language statistics
+supabase/* linguist-detectable=false
+*.sql linguist-detectable=false
