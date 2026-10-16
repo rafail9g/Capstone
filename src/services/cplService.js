@@ -12,7 +12,6 @@ async function getById(id) {
   return row;
 }
 
-// Dipakai form mata kuliah: dropdown CPL diisi lewat ?program_studi_id=...
 async function list({ page = 1, limit = 10, search, program_studi_id } = {}) {
   let q = supabase.from('cpl').select(CPL_SELECT, { count: 'exact' });
 
@@ -28,7 +27,23 @@ async function list({ page = 1, limit = 10, search, program_studi_id } = {}) {
 }
 
 async function create(data) {
+  if (!data.program_studi_id) {
+    throw new AppError(400, 'Program studi wajib dipilih terlebih dahulu sebelum mengisi CPL');
+  }
   await prodi.mustExist(data.program_studi_id);
+
+  const existingCpl = unwrap(
+    await supabase
+      .from('cpl')
+      .select('id')
+      .eq('program_studi_id', data.program_studi_id)
+      .eq('kode', data.kode)
+      .maybeSingle()
+  );
+  if (existingCpl) {
+    throw new AppError(409, `Kode CPL "${data.kode}" sudah terdaftar pada program studi ini`);
+  }
+
   const inserted = unwrap(
     await supabase
       .from('cpl')
@@ -44,8 +59,28 @@ async function create(data) {
 }
 
 async function update(id, data) {
-  await getById(id);
-  if (data.program_studi_id !== undefined) await prodi.mustExist(data.program_studi_id);
+  const existing = await getById(id);
+  const prodiId = data.program_studi_id !== undefined ? data.program_studi_id : existing.program_studi_id;
+
+  if (data.program_studi_id !== undefined) await prodi.mustExist(prodiId);
+
+  if (
+    data.kode &&
+    (data.kode !== existing.kode || (data.program_studi_id && data.program_studi_id !== existing.program_studi_id))
+  ) {
+    const duplicate = unwrap(
+      await supabase
+        .from('cpl')
+        .select('id')
+        .eq('program_studi_id', prodiId)
+        .eq('kode', data.kode)
+        .neq('id', id)
+        .maybeSingle()
+    );
+    if (duplicate) {
+      throw new AppError(409, `Kode CPL "${data.kode}" sudah digunakan pada program studi ini`);
+    }
+  }
 
   const patch = Object.fromEntries(
     Object.entries({
@@ -55,13 +90,27 @@ async function update(id, data) {
     }).filter(([, v]) => v !== undefined)
   );
 
-  unwrap(await supabase.from('cpl').update(patch).eq('id', id));
+  if (Object.keys(patch).length) {
+    unwrap(await supabase.from('cpl').update(patch).eq('id', id));
+  }
   return getById(id);
 }
 
 async function remove(id) {
-  await getById(id);
-  // Kalau masih dipakai mata kuliah, DB menolak (FK restrict) -> 409
+  const existing = await getById(id);
+  const { data: usedByMk } = await supabase
+    .from('mata_kuliah')
+    .select('id,kode,nama')
+    .eq('cpl_id', id)
+    .limit(1);
+
+  if (usedByMk && usedByMk.length > 0) {
+    throw new AppError(
+      409,
+      `CPL "${existing.kode}" tidak dapat dihapus karena masih digunakan oleh mata kuliah "${usedByMk[0].nama}" (${usedByMk[0].kode})`
+    );
+  }
+
   unwrap(await supabase.from('cpl').delete().eq('id', id));
 }
 

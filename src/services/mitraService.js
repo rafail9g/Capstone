@@ -2,7 +2,7 @@ const supabase = require('../config/supabase');
 const { AppError, unwrap } = require('../utils/errors');
 const { sanitizeSearch } = require('../utils/search');
 
-const MITRA_SELECT = 'id,nama,alamat,email,deskripsi,foto_url,is_active,created_at,updated_at';
+const MITRA_SELECT = 'id,nama,nomor_pks,alamat,kontak,email,deskripsi,foto_url,is_active,created_at,updated_at';
 
 const defined = (obj) =>
   Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined));
@@ -22,7 +22,7 @@ async function list({ page = 1, limit = 10, search, is_active } = {}) {
 
   const s = sanitizeSearch(search);
   if (s) {
-    q = q.or('nama.ilike.%' + s + '%,email.ilike.%' + s + '%,alamat.ilike.%' + s + '%');
+    q = q.or('nama.ilike.%' + s + '%,nomor_pks.ilike.%' + s + '%,email.ilike.%' + s + '%,alamat.ilike.%' + s + '%,kontak.ilike.%' + s + '%');
   }
 
   const from = (page - 1) * limit;
@@ -34,7 +34,9 @@ async function list({ page = 1, limit = 10, search, is_active } = {}) {
 async function create(data, fotoUrl = null) {
   const payload = defined({
     nama: data.nama,
+    nomor_pks: data.nomor_pks || null,
     alamat: data.alamat || null,
+    kontak: data.kontak || null,
     email: data.email || null,
     deskripsi: data.deskripsi || null,
     foto_url: fotoUrl,
@@ -51,7 +53,9 @@ async function update(id, data, fotoUrl) {
 
   const patch = defined({
     nama: data.nama,
+    nomor_pks: data.nomor_pks !== undefined ? (data.nomor_pks || null) : undefined,
     alamat: data.alamat !== undefined ? (data.alamat || null) : undefined,
+    kontak: data.kontak !== undefined ? (data.kontak || null) : undefined,
     email: data.email !== undefined ? (data.email || null) : undefined,
     deskripsi: data.deskripsi !== undefined ? (data.deskripsi || null) : undefined,
     is_active: data.is_active,

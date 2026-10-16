@@ -1,9 +1,11 @@
 const supabase = require('../config/supabase');
 const { AppError, unwrap } = require('../utils/errors');
 const { sanitizeSearch } = require('../utils/search');
+const prodi = require('./prodiService');
 
 const PAKET_SELECT =
-  'id,nama,deskripsi,created_at,updated_at,' +
+  'id,program_studi_id,nama,deskripsi,created_at,updated_at,' +
+  'program_studi(id,kode,nama),' +
   'paket_konversi_item(mata_kuliah(id,kode,nama,sks,program_studi(id,kode,nama),cpl(id,kode,deskripsi),cpmk(id,urutan,deskripsi)))';
 
 const formatPaket = (row) => {
@@ -53,8 +55,12 @@ async function getById(id) {
   return formatPaket(row);
 }
 
-async function list({ page = 1, limit = 10, search } = {}) {
+async function list({ page = 1, limit = 10, search, program_studi_id } = {}) {
   let q = supabase.from('paket_konversi').select(PAKET_SELECT, { count: 'exact' });
+
+  if (program_studi_id !== undefined) {
+    q = q.eq('program_studi_id', program_studi_id);
+  }
 
   const s = sanitizeSearch(search);
   if (s) {
@@ -72,6 +78,8 @@ async function list({ page = 1, limit = 10, search } = {}) {
 }
 
 async function create(data) {
+  await prodi.mustExist(data.program_studi_id);
+
   if (data.mata_kuliah_ids && data.mata_kuliah_ids.length > 0) {
     await assertMataKuliahExist(data.mata_kuliah_ids);
   }
@@ -80,6 +88,7 @@ async function create(data) {
     await supabase
       .from('paket_konversi')
       .insert({
+        program_studi_id: data.program_studi_id,
         nama: data.nama,
         deskripsi: data.deskripsi || null,
       })
@@ -104,12 +113,17 @@ async function create(data) {
 async function update(id, data) {
   await getById(id);
 
+  if (data.program_studi_id !== undefined) {
+    await prodi.mustExist(data.program_studi_id);
+  }
+
   if (data.mata_kuliah_ids !== undefined) {
     await assertMataKuliahExist(data.mata_kuliah_ids);
   }
 
   const patch = Object.fromEntries(
     Object.entries({
+      program_studi_id: data.program_studi_id,
       nama: data.nama,
       deskripsi: data.deskripsi,
     }).filter(([, v]) => v !== undefined)

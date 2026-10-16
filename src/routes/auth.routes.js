@@ -63,14 +63,4 @@ router.get(
   })
 );
 
-router.put(
-  '/me',
-  authenticate,
-  validate(schemas.updateSelf),
-  asyncHandler(async (req, res) => {
-    const user = await users.updateOwnProfile(req.user.id, req.body);
-    res.json({ success: true, message: 'Profil berhasil diperbarui', data: user });
-  })
-);
-
 module.exports = router;

@@ -33,31 +33,23 @@ exports.createUser = z.discriminatedUnion('user_type', [
     ...base,
     user_type: z.literal('dosen'),
     nip: z.string().trim().min(3).max(30),
-    role_ids: roleIds.optional(), // role dipilih admin (tim_mbkm, gpm, dpl, ...)
+    role_ids: roleIds.optional(), 
   }),
   z.object({ ...base, user_type: z.literal('admin') }),
 ]);
 
-// Dipakai admin: bikin akun dosen (admin sekarang hanya boleh kelola dosen)
 exports.createDosenByAdmin = z.object({
   ...base,
   nip: z.string().trim().min(3).max(30),
-  role_ids: roleIds.optional(), // opsional: tim_mbkm, gpm, penguji_semhas, dpl, dst (boleh lebih dari satu)
+  role_ids: roleIds.optional(), 
 });
 
-// Mahasiswa daftar sendiri (publik, tanpa token)
 exports.registerMahasiswa = z.object({
   ...base,
   nim: z.string().trim().min(3).max(30),
   prodi: z.string().trim().max(100).optional(),
   angkatan: z.number().int().min(1990).max(2100).optional(),
 });
-
-// Edit profil sendiri (siapa saja yang login) - tidak boleh ganti email/user_type/role/status
-exports.updateSelf = z
-  .object({ nama, alamat, password })
-  .partial()
-  .refine((v) => Object.keys(v).length > 0, 'Minimal satu field harus diisi');
 
 exports.updateUser = z
   .object({

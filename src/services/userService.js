@@ -146,21 +146,12 @@ async function update(id, data, actorId) {
   return getById(id);
 }
 
-// Edit profil sendiri: nama/alamat/password saja (bukan email, role, status, NIM/NIP)
-async function updateOwnProfile(id, data) {
-  const patch = defined({ nama: data.nama, alamat: data.alamat });
-  if (data.password) patch.password_hash = await bcrypt.hash(data.password, 10);
-  if (Object.keys(patch).length) unwrap(await supabase.from('users').update(patch).eq('id', id));
-  return getById(id);
-}
-
 async function remove(id, actorId) {
   if (id === actorId) throw new AppError(400, 'Tidak dapat menghapus akun sendiri');
   await getById(id);
-  unwrap(await supabase.from('users').delete().eq('id', id)); // profil & role ikut terhapus (CASCADE)
+  unwrap(await supabase.from('users').delete().eq('id', id)); 
 }
 
-// Ganti seluruh role (cocok untuk form checkbox)
 async function setRoles(id, roleIds, actorId) {
   const user = await getById(id);
   const finalIds = await resolveRoleIds(user.user_type, roleIds);
@@ -192,7 +183,6 @@ module.exports = {
   list,
   create,
   update,
-  updateOwnProfile,
   remove,
   setRoles,
   addRoles,

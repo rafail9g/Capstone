@@ -5,7 +5,7 @@ const { asyncHandler } = require('../utils/errors');
 const paketService = require('../services/paketKonversiService');
 const schemas = require('../validators/paketKonversiSchemas');
 
-router.use(authenticate, requireRole('admin', 'tim_mbkm'));
+router.use(authenticate, requireRole('tim_mbkm'));
 
 router.get(
   '/',
@@ -52,3 +52,4 @@ router.delete(
 );
 
 module.exports = router;
+

@@ -5,7 +5,7 @@ const { asyncHandler } = require('../utils/errors');
 const mk = require('../services/mataKuliahService');
 const schemas = require('../validators/akademikSchemas');
 
-router.use(authenticate, requireRole('admin'));
+router.use(authenticate, requireRole('tim_mbkm'));
 
 router.get(
   '/',
@@ -52,3 +52,4 @@ router.delete(
 );
 
 module.exports = router;
+

@@ -10,14 +10,18 @@ const boolPreprocess = (val) => {
 };
 
 const nama = z.string().trim().min(2, 'Nama minimal 2 karakter').max(200);
+const nomorPks = z.preprocess(emptyToUndef, z.string().trim().max(100).optional());
 const alamat = z.preprocess(emptyToUndef, z.string().trim().max(500).optional());
+const kontak = z.preprocess(emptyToUndef, z.string().trim().max(50).optional());
 const email = z.preprocess(emptyToUndef, z.string().trim().toLowerCase().email('Format email tidak valid').max(254).optional());
 const deskripsi = z.preprocess(emptyToUndef, z.string().trim().max(2000).optional());
 const isActive = z.preprocess(boolPreprocess, z.boolean().optional());
 
 exports.createMitra = z.object({
   nama,
+  nomor_pks: nomorPks,
   alamat,
+  kontak,
   email,
   deskripsi,
 });
@@ -25,7 +29,9 @@ exports.createMitra = z.object({
 exports.updateMitra = z
   .object({
     nama: nama.optional(),
+    nomor_pks: nomorPks,
     alamat,
+    kontak,
     email,
     deskripsi,
     is_active: isActive,

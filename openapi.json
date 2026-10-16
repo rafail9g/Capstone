@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "MBKM API",
+    "title": "MBKM API” Manajemen User & Role",
     "version": "1.1.0",
     "description": "Admin mengelola akun dosen (Tim MBKM, GPM, Penguji Semhas, DPL, dll - satu dosen boleh punya beberapa role) dan akun mahasiswa langsung dibuat oleh admin. Klik Authorize lalu isi token dari /auth/login untuk mencoba endpoint yang butuh login."
   },
@@ -21,7 +21,7 @@
     },
     {
       "name": "Roles",
-      "description": "Master data role"
+      "description": "Master data role (read-only untuk dropdown / opsi pilihan role dosen)"
     },
     {
       "name": "Dashboard",
@@ -37,15 +37,15 @@
     },
     {
       "name": "CPL",
-      "description": "Admin: CRUD Capaian Pembelajaran Lulusan"
+      "description": "Tim MBKM: CRUD Capaian Pembelajaran Lulusan"
     },
     {
       "name": "Mata Kuliah",
-      "description": "Admin: CRUD mata kuliah beserta CPMK"
+      "description": "Tim MBKM: CRUD mata kuliah beserta CPMK"
     },
     {
       "name": "Paket Konversi",
-      "description": "Admin & Tim MBKM: CRUD paket konversi mata kuliah (pemaketan role/skill MBKM)"
+      "description": "Tim MBKM: CRUD paket konversi mata kuliah"
     }
   ],
   "components": {
@@ -163,20 +163,6 @@
           "password": {
             "type": "string",
             "example": "GantiPasswordIni123"
-          }
-        }
-      },
-      "UpdateSelfRequest": {
-        "type": "object",
-        "properties": {
-          "nama": {
-            "type": "string"
-          },
-          "alamat": {
-            "type": "string"
-          },
-          "password": {
-            "type": "string"
           }
         }
       },
@@ -304,10 +290,20 @@
             "type": "string",
             "example": "PT. Mencari Cinta Sejati"
           },
+          "nomor_pks": {
+            "type": "string",
+            "nullable": true,
+            "example": "PKS/2026/001"
+          },
           "alamat": {
             "type": "string",
             "nullable": true,
             "example": "Jalan Mawar No. 5"
+          },
+          "kontak": {
+            "type": "string",
+            "nullable": true,
+            "example": "081234567890"
           },
           "email": {
             "type": "string",
@@ -317,7 +313,7 @@
           "deskripsi": {
             "type": "string",
             "nullable": true,
-            "example": "Lorem ipsum dolor sit amet"
+            "example": "Perusahaan bergerak di bidang teknologi"
           },
           "foto_url": {
             "type": "string",
@@ -348,9 +344,17 @@
             "type": "string",
             "example": "PT. Mencari Cinta Sejati"
           },
+          "nomor_pks": {
+            "type": "string",
+            "example": "PKS/2026/001"
+          },
           "alamat": {
             "type": "string",
             "example": "Jalan Mawar No. 5"
+          },
+          "kontak": {
+            "type": "string",
+            "example": "081234567890"
           },
           "email": {
             "type": "string",
@@ -374,9 +378,17 @@
             "type": "string",
             "example": "PT. Nama Baru"
           },
+          "nomor_pks": {
+            "type": "string",
+            "example": "PKS/2026/002"
+          },
           "alamat": {
             "type": "string",
             "example": "Jalan Mawar No. 10"
+          },
+          "kontak": {
+            "type": "string",
+            "example": "081234567899"
           },
           "email": {
             "type": "string",
@@ -407,9 +419,17 @@
             "type": "string",
             "example": "PT. Mencari Cinta Sejati"
           },
+          "nomor_pks": {
+            "type": "string",
+            "example": "PKS/2026/001"
+          },
           "alamat": {
             "type": "string",
             "example": "Jalan Mawar No. 5"
+          },
+          "kontak": {
+            "type": "string",
+            "example": "081234567890"
           },
           "email": {
             "type": "string",
@@ -417,7 +437,7 @@
           },
           "deskripsi": {
             "type": "string",
-            "example": "Perusahaan teknologi"
+            "example": "Perusahaan bergerak di bidang teknologi"
           }
         }
       },
@@ -583,15 +603,22 @@
         "type": "object",
         "required": [
           "program_studi_id",
+          "cpl_id",
           "kode",
           "nama",
-          "cpl_id",
-          "sks"
+          "sks",
+          "cpmk"
         ],
         "properties": {
           "program_studi_id": {
             "type": "integer",
-            "example": 3
+            "example": 3,
+            "description": "ID Program Studi (wajib dipilih terlebih dahulu)"
+          },
+          "cpl_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Harus CPL milik program studi yang sama"
           },
           "kode": {
             "type": "string",
@@ -601,11 +628,6 @@
             "type": "string",
             "example": "Algoritma Evolusi (KFU1202)"
           },
-          "cpl_id": {
-            "type": "string",
-            "format": "uuid",
-            "description": "Harus CPL milik program studi yang sama"
-          },
           "sks": {
             "type": "integer",
             "minimum": 1,
@@ -614,7 +636,8 @@
           },
           "cpmk": {
             "type": "array",
-            "description": "Deskripsi CPMK, jumlah bebas (maks 50). Isian kosong diabaikan.",
+            "description": "Deskripsi CPMK untuk CPL terpilih (wajib minimal 1 item, setiap CPMK harus unik, maks 50).",
+            "minItems": 1,
             "items": {
               "type": "string"
             },
@@ -659,6 +682,13 @@
             "type": "string",
             "format": "uuid"
           },
+          "program_studi_id": {
+            "type": "integer",
+            "example": 1
+          },
+          "program_studi": {
+            "$ref": "#/components/schemas/ProgramStudi"
+          },
           "nama": {
             "type": "string",
             "example": "UI/UX DESIGN"
@@ -695,9 +725,15 @@
       "CreatePaketKonversiRequest": {
         "type": "object",
         "required": [
+          "program_studi_id",
           "nama"
         ],
         "properties": {
+          "program_studi_id": {
+            "type": "integer",
+            "description": "ID Program Studi (dari /prodi)",
+            "example": 1
+          },
           "nama": {
             "type": "string",
             "description": "Nama plotting / role / skill MBKM",
@@ -715,8 +751,7 @@
               "format": "uuid"
             },
             "example": [
-              "a0000000-0000-0000-0000-000000000001",
-              "a0000000-0000-0000-0000-000000000002"
+              "5552d5db-a9e8-4a8e-8822-8657fa6402bb"
             ]
           }
         }
@@ -725,6 +760,10 @@
         "type": "object",
         "description": "Minimal satu field. Jika mata_kuliah_ids dikirim, seluruh daftar mata kuliah pada paket akan diganti.",
         "properties": {
+          "program_studi_id": {
+            "type": "integer",
+            "example": 1
+          },
           "nama": {
             "type": "string",
             "example": "UI/UX DESIGN & RESEARCH"
@@ -793,32 +832,6 @@
             "description": "OK"
           }
         }
-      },
-      "put": {
-        "tags": [
-          "Auth"
-        ],
-        "summary": "Edit profil sendiri (nama/alamat/password)",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateSelfRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
       }
     },
     "/dashboard": {
@@ -870,32 +883,6 @@
             "description": "OK"
           }
         }
-      },
-      "post": {
-        "tags": [
-          "Roles"
-        ],
-        "summary": "Buat role baru (admin)",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateRoleRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Dibuat"
-          }
-        }
       }
     },
     "/roles/{id}": {
@@ -904,67 +891,6 @@
           "Roles"
         ],
         "summary": "Detail role",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Roles"
-        ],
-        "summary": "Edit role (admin)",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateRoleRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Roles"
-        ],
-        "summary": "Hapus role (admin, role bawaan terlindungi)",
         "security": [
           {
             "bearerAuth": []
@@ -1610,6 +1536,9 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "OK"
+          },
           "400": {
             "description": "Validasi gagal"
           },
@@ -1618,9 +1547,6 @@
           },
           "403": {
             "description": "Bukan admin"
-          },
-          "200": {
-            "description": "OK"
           }
         }
       }
@@ -1630,7 +1556,7 @@
         "tags": [
           "CPL"
         ],
-        "summary": "Daftar CPL",
+        "summary": "Daftar CPL (tim MBKM)",
         "security": [
           {
             "bearerAuth": []
@@ -1671,6 +1597,9 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "OK: {rows,total}"
+          },
           "400": {
             "description": "Validasi gagal"
           },
@@ -1678,10 +1607,7 @@
             "description": "Belum login"
           },
           "403": {
-            "description": "Bukan admin"
-          },
-          "200": {
-            "description": "OK: {rows,total}"
+            "description": "Bukan tim MBKM"
           }
         }
       },
@@ -1689,7 +1615,7 @@
         "tags": [
           "CPL"
         ],
-        "summary": "Tambah CPL",
+        "summary": "Tambah CPL (tim MBKM)",
         "security": [
           {
             "bearerAuth": []
@@ -1706,6 +1632,9 @@
           }
         },
         "responses": {
+          "201": {
+            "description": "Dibuat"
+          },
           "400": {
             "description": "Validasi gagal"
           },
@@ -1713,10 +1642,7 @@
             "description": "Belum login"
           },
           "403": {
-            "description": "Bukan admin"
-          },
-          "201": {
-            "description": "Dibuat"
+            "description": "Bukan tim MBKM"
           },
           "409": {
             "description": "Kode sudah terdaftar di program studi tsb"
@@ -1729,7 +1655,7 @@
         "tags": [
           "CPL"
         ],
-        "summary": "Detail CPL",
+        "summary": "Detail CPL (tim MBKM)",
         "security": [
           {
             "bearerAuth": []
@@ -1748,6 +1674,9 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "OK"
+          },
           "400": {
             "description": "Validasi gagal"
           },
@@ -1755,10 +1684,7 @@
             "description": "Belum login"
           },
           "403": {
-            "description": "Bukan admin"
-          },
-          "200": {
-            "description": "OK"
+            "description": "Bukan tim MBKM"
           },
           "404": {
             "description": "Tidak ditemukan"
@@ -1769,7 +1695,7 @@
         "tags": [
           "CPL"
         ],
-        "summary": "Edit CPL",
+        "summary": "Edit CPL (tim MBKM)",
         "security": [
           {
             "bearerAuth": []
@@ -1798,6 +1724,9 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "OK"
+          },
           "400": {
             "description": "Validasi gagal"
           },
@@ -1805,10 +1734,7 @@
             "description": "Belum login"
           },
           "403": {
-            "description": "Bukan admin"
-          },
-          "200": {
-            "description": "OK"
+            "description": "Bukan tim MBKM"
           },
           "404": {
             "description": "Tidak ditemukan"
@@ -1825,7 +1751,7 @@
         "tags": [
           "CPL"
         ],
-        "summary": "Hapus CPL",
+        "summary": "Hapus CPL (tim MBKM)",
         "security": [
           {
             "bearerAuth": []
@@ -1844,6 +1770,9 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "Dihapus"
+          },
           "400": {
             "description": "Validasi gagal"
           },
@@ -1851,10 +1780,7 @@
             "description": "Belum login"
           },
           "403": {
-            "description": "Bukan admin"
-          },
-          "200": {
-            "description": "Dihapus"
+            "description": "Bukan tim MBKM"
           },
           "404": {
             "description": "Tidak ditemukan"
@@ -1870,7 +1796,7 @@
         "tags": [
           "Mata Kuliah"
         ],
-        "summary": "Daftar mata kuliah (beserta CPL & CPMK)",
+        "summary": "Daftar mata kuliah (beserta CPL & CPMK) (tim MBKM)",
         "security": [
           {
             "bearerAuth": []
@@ -1911,6 +1837,9 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "OK: {rows,total}"
+          },
           "400": {
             "description": "Validasi gagal"
           },
@@ -1918,10 +1847,7 @@
             "description": "Belum login"
           },
           "403": {
-            "description": "Bukan admin"
-          },
-          "200": {
-            "description": "OK: {rows,total}"
+            "description": "Bukan tim MBKM"
           }
         }
       },
@@ -1929,7 +1855,7 @@
         "tags": [
           "Mata Kuliah"
         ],
-        "summary": "Tambah mata kuliah",
+        "summary": "Tambah mata kuliah (tim MBKM)",
         "security": [
           {
             "bearerAuth": []
@@ -1946,6 +1872,9 @@
           }
         },
         "responses": {
+          "201": {
+            "description": "Dibuat"
+          },
           "400": {
             "description": "Validasi gagal"
           },
@@ -1953,10 +1882,7 @@
             "description": "Belum login"
           },
           "403": {
-            "description": "Bukan admin"
-          },
-          "201": {
-            "description": "Dibuat"
+            "description": "Bukan tim MBKM"
           },
           "409": {
             "description": "Kode sudah terdaftar di program studi tsb"
@@ -1969,7 +1895,7 @@
         "tags": [
           "Mata Kuliah"
         ],
-        "summary": "Detail mata kuliah",
+        "summary": "Detail mata kuliah (tim MBKM)",
         "security": [
           {
             "bearerAuth": []
@@ -1988,6 +1914,9 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "OK"
+          },
           "400": {
             "description": "Validasi gagal"
           },
@@ -1995,10 +1924,7 @@
             "description": "Belum login"
           },
           "403": {
-            "description": "Bukan admin"
-          },
-          "200": {
-            "description": "OK"
+            "description": "Bukan tim MBKM"
           },
           "404": {
             "description": "Tidak ditemukan"
@@ -2009,7 +1935,7 @@
         "tags": [
           "Mata Kuliah"
         ],
-        "summary": "Edit mata kuliah",
+        "summary": "Edit mata kuliah (tim MBKM)",
         "security": [
           {
             "bearerAuth": []
@@ -2038,6 +1964,9 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "OK"
+          },
           "400": {
             "description": "Validasi gagal"
           },
@@ -2045,10 +1974,7 @@
             "description": "Belum login"
           },
           "403": {
-            "description": "Bukan admin"
-          },
-          "200": {
-            "description": "OK"
+            "description": "Bukan tim MBKM"
           },
           "404": {
             "description": "Tidak ditemukan"
@@ -2062,7 +1988,7 @@
         "tags": [
           "Mata Kuliah"
         ],
-        "summary": "Hapus mata kuliah (CPMK ikut terhapus)",
+        "summary": "Hapus mata kuliah (CPMK ikut terhapus) (tim MBKM)",
         "security": [
           {
             "bearerAuth": []
@@ -2081,6 +2007,9 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "Dihapus"
+          },
           "400": {
             "description": "Validasi gagal"
           },
@@ -2088,10 +2017,7 @@
             "description": "Belum login"
           },
           "403": {
-            "description": "Bukan admin"
-          },
-          "200": {
-            "description": "Dihapus"
+            "description": "Bukan tim MBKM"
           },
           "404": {
             "description": "Tidak ditemukan"
@@ -2104,7 +2030,7 @@
         "tags": [
           "Paket Konversi"
         ],
-        "summary": "Daftar paket konversi mata kuliah (plot role/skill MBKM)",
+        "summary": "Daftar paket konversi mata kuliah (plot role/skill MBKM) (tim MBKM)",
         "security": [
           {
             "bearerAuth": []
@@ -2138,6 +2064,9 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "OK: {rows,total}"
+          },
           "400": {
             "description": "Validasi gagal"
           },
@@ -2145,10 +2074,7 @@
             "description": "Belum login"
           },
           "403": {
-            "description": "Bukan admin atau tim MBKM"
-          },
-          "200": {
-            "description": "OK: {rows,total}"
+            "description": "Bukan tim MBKM"
           }
         }
       },
@@ -2156,7 +2082,7 @@
         "tags": [
           "Paket Konversi"
         ],
-        "summary": "Buat paket konversi baru (plot role/skill MBKM)",
+        "summary": "Buat paket konversi baru (plot role/skill MBKM) (tim MBKM)",
         "security": [
           {
             "bearerAuth": []
@@ -2173,6 +2099,9 @@
           }
         },
         "responses": {
+          "201": {
+            "description": "Paket konversi berhasil dibuat"
+          },
           "400": {
             "description": "Validasi gagal atau ID mata kuliah tidak ditemukan"
           },
@@ -2180,10 +2109,7 @@
             "description": "Belum login"
           },
           "403": {
-            "description": "Bukan admin atau tim MBKM"
-          },
-          "201": {
-            "description": "Paket konversi berhasil dibuat"
+            "description": "Bukan tim MBKM"
           }
         }
       }
@@ -2193,7 +2119,7 @@
         "tags": [
           "Paket Konversi"
         ],
-        "summary": "Detail paket konversi beserta daftar mata kuliah terpilih",
+        "summary": "Detail paket konversi beserta daftar mata kuliah terpilih (tim MBKM)",
         "security": [
           {
             "bearerAuth": []
@@ -2212,6 +2138,9 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "OK"
+          },
           "400": {
             "description": "Validasi ID gagal"
           },
@@ -2219,10 +2148,7 @@
             "description": "Belum login"
           },
           "403": {
-            "description": "Bukan admin atau tim MBKM"
-          },
-          "200": {
-            "description": "OK"
+            "description": "Bukan tim MBKM"
           },
           "404": {
             "description": "Paket konversi tidak ditemukan"
@@ -2233,7 +2159,7 @@
         "tags": [
           "Paket Konversi"
         ],
-        "summary": "Edit paket konversi & sinkronisasi item mata kuliah",
+        "summary": "Edit paket konversi & sinkronisasi item mata kuliah (tim MBKM)",
         "security": [
           {
             "bearerAuth": []
@@ -2262,6 +2188,9 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Paket konversi berhasil diperbarui"
+          },
           "400": {
             "description": "Validasi gagal atau ID mata kuliah tidak ditemukan"
           },
@@ -2269,10 +2198,7 @@
             "description": "Belum login"
           },
           "403": {
-            "description": "Bukan admin atau tim MBKM"
-          },
-          "200": {
-            "description": "Paket konversi berhasil diperbarui"
+            "description": "Bukan tim MBKM"
           },
           "404": {
             "description": "Paket konversi tidak ditemukan"
@@ -2283,7 +2209,7 @@
         "tags": [
           "Paket Konversi"
         ],
-        "summary": "Hapus paket konversi",
+        "summary": "Hapus paket konversi (tim MBKM)",
         "security": [
           {
             "bearerAuth": []
@@ -2302,6 +2228,9 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "Paket konversi berhasil dihapus"
+          },
           "400": {
             "description": "Validasi ID gagal"
           },
@@ -2309,10 +2238,7 @@
             "description": "Belum login"
           },
           "403": {
-            "description": "Bukan admin atau tim MBKM"
-          },
-          "200": {
-            "description": "Paket konversi berhasil dihapus"
+            "description": "Bukan tim MBKM"
           },
           "404": {
             "description": "Paket konversi tidak ditemukan"

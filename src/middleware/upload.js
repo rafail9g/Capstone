@@ -2,9 +2,8 @@ const multer = require('multer');
 const { AppError } = require('../utils/errors');
 
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+const MAX_SIZE = 5 * 1024 * 1024;
 
-// Simpan di memory (buffer) – kita langsung pipe ke Supabase Storage
 const storage = multer.memoryStorage();
 
 const upload = multer({
@@ -18,10 +17,6 @@ const upload = multer({
   },
 });
 
-/**
- * Middleware single-file upload untuk field "foto".
- * Lempar AppError yang ramah kalau ada masalah Multer.
- */
 function uploadFotoMiddleware(req, res, next) {
   upload.single('foto')(req, res, (err) => {
     if (!err) return next();
